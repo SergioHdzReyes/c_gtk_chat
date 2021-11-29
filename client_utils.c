@@ -63,8 +63,66 @@ void receiveConexions()
 
         int bytes_received = recvfrom(scktRecv, read, 1024,
                                       0, (struct sockaddr *) &client_address, &client_len);
+        printf("Respuesta recibida: %s", read);
+        if (!bytes_received) continue;
+
+        request = (struct requestStrc *)&read;
+
+        // Se responde a cliente
+        processResponse(*request);
+
         printf("RECIBIDOS: %s\n", read);
     }
+}
+
+void sendConexion()
+{
+
+}
+
+void processResponse(struct requestStrc request)
+{
+    pthread_t threadId;
+
+    switch (request.type) {
+        case ADD:
+            serverConnected = 1;
+            printf("AGREGADO\n");
+            break;
+        case MSG:
+            printf("MENSAJE\n");
+            break;
+        case REMOVE:
+            printf("REMOVER\n");
+            break;
+        default:
+            break;
+    }
+}
+
+void loginBtnSendClicked(GtkButton *btn)
+{
+    GtkWidget *gtkLabelMsgs = GTK_WIDGET(gtk_builder_get_object(builder, "loginLabelMsgs"));
+    GtkWidget *alias = GTK_WIDGET(gtk_builder_get_object(builder, "loginInputName"));
+    GtkEntryBuffer *inputName = gtk_entry_get_buffer((GtkEntry*) alias);
+    const char *name = gtk_entry_buffer_get_text(inputName);
+    g_print("Ingresaste %s\n", name);
+
+    if (!strcmp(name, "")) {
+        gtk_label_set_text(GTK_LABEL(gtkLabelMsgs), (const gchar*)"Ingrese un nombre válido.");
+        return;
+    }
+
+    g_thread_new(NULL, (GThreadFunc)receiveConexions, NULL);
+    sleep(1);
+    if (!serverConnected) {
+        gtk_label_set_text(GTK_LABEL(gtkLabelMsgs), (const gchar*)"Servidor no encontrado, intente nuevamente.");
+        return;
+    }
+
+    gtkStack = GTK_WIDGET(gtk_builder_get_object(builder, "stack"));
+    gtkFixedSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUserFixed"));
+    gtk_stack_set_visible_child((GtkStack*) gtkStack, gtkFixedSelectUser);
 }
 
 void onWindowDestroy()

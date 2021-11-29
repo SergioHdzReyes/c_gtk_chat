@@ -9,7 +9,6 @@ int main (int argc, char *argv[])
     gtk_init(&argc, &argv);
 
     startGUI();
-    g_thread_new(NULL, (GThreadFunc)receiveConexions, NULL);
 
     gtk_main();
 

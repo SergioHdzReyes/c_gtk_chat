@@ -44,6 +44,7 @@
 #define ADD     1
 #define MSG     2
 #define REMOVE  3
+#define STATUS  4
 
 struct requestStrc {
     int type;
@@ -51,15 +52,29 @@ struct requestStrc {
 };
 
 SOCKET scktRecv;
+int serverConnected;
+
 
 // Variables UI
 GtkWidget *window;
 GtkBuilder *builder;
-GtkWidget *fixed;
+GtkWidget *gtkStack;
+
+// Vista "Login"
+GtkWidget *gtkFixedLogin;
+//GtkWidget *gtkLabelMsgs;
+
+// Vista "Lista de usuarios disponibles"
+GtkWidget *gtkFixedSelectUser;
+
+// Vista "Chat"
+GtkWidget *gtkFixedChat;
 
 
 void startGUI();
 void receiveConexions();
+void sendConexion();
+void processResponse(struct requestStrc request);
 void onWindowDestroy();
 
 #endif //C_GTK_SUBSCRIPTION_CLIENT_UTILS_H

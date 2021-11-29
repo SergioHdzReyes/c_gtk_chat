@@ -25,6 +25,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <signal name="clicked" handler="loginBtnSendClicked" swapped="no"/>
               </object>
               <packing>
                 <property name="x">520</property>
@@ -55,6 +56,18 @@
               <packing>
                 <property name="x">385</property>
                 <property name="y">250</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="loginLabelMsgs">
+                <property name="width_request">200</property>
+                <property name="height_request">80</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="x">410</property>
+                <property name="y">410</property>
               </packing>
             </child>
           </object>
@@ -141,7 +154,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkFixed">
+          <object class="GtkFixed" id="chatFixed">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
