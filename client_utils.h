@@ -41,15 +41,20 @@
 
 
 // REQUESTS TYPE
-#define ADD     1
-#define MSG     2
-#define REMOVE  3
-#define STATUS  4
+#define CH_ADD      1
+#define CH_MSG      2
+#define CH_REMOVE   3
+#define CH_CONNECT   4
 
 struct requestStrc {
     int type;
     char content[100];
 };
+
+struct clientList {
+    int id;
+    char name[30];
+} *clients;
 
 SOCKET scktRecv;
 int serverConnected;
@@ -75,6 +80,7 @@ void startGUI();
 void receiveConexions();
 void sendConexion();
 void processResponse(struct requestStrc request);
+void connectServer(char content[512]);
 void onWindowDestroy();
 
 #endif //C_GTK_SUBSCRIPTION_CLIENT_UTILS_H

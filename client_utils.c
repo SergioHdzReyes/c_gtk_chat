@@ -6,6 +6,7 @@
 
 void startGUI()
 {
+    serverConnected = 0;
     builder = gtk_builder_new_from_file("client.glade");
     window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
 
@@ -45,8 +46,8 @@ void receiveConexions()
     }
 
     struct requestStrc *datos = malloc(sizeof(struct requestStrc));
-    *(int *)&datos->type = ADD;
-    strcpy((char *)&datos->content, "Sergio Hernandez Reyes");
+    *(int *)&datos->type = CH_CONNECT;
+    strcpy((char *)&datos->content, "");
 
     ssize_t bytes_sent = sendto(scktRecv,
                             datos, sizeof(struct requestStrc),
@@ -63,15 +64,14 @@ void receiveConexions()
 
         int bytes_received = recvfrom(scktRecv, read, 1024,
                                       0, (struct sockaddr *) &client_address, &client_len);
-        printf("Respuesta recibida: %s", read);
+        printf("Respuesta recibida: %s\n", read);
+        printf("Bytes recibidos: %d\n", bytes_received);
         if (!bytes_received) continue;
 
         request = (struct requestStrc *)&read;
 
         // Se responde a cliente
         processResponse(*request);
-
-        printf("RECIBIDOS: %s\n", read);
     }
 }
 
@@ -85,19 +85,29 @@ void processResponse(struct requestStrc request)
     pthread_t threadId;
 
     switch (request.type) {
-        case ADD:
-            serverConnected = 1;
+        case CH_ADD:
             printf("AGREGADO\n");
             break;
-        case MSG:
+        case CH_MSG:
             printf("MENSAJE\n");
             break;
-        case REMOVE:
+        case CH_REMOVE:
             printf("REMOVER\n");
+            break;
+        case CH_CONNECT:
+            connectServer(request.content);
             break;
         default:
             break;
     }
+}
+
+void connectServer(char content[512])
+{
+    clients = (struct clientList *)content;
+
+    serverConnected = 1;
+    printf("CONNECTED\n");
 }
 
 void loginBtnSendClicked(GtkButton *btn)
