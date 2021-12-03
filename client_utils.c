@@ -7,10 +7,12 @@
 void startGUI()
 {
     serverConnected = 0;
+    clients = NULL;
+
     builder = gtk_builder_new_from_file("client.glade");
     window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
+    gtkStack = GTK_WIDGET(gtk_builder_get_object(builder, "stack"));
 
-    g_signal_connect(window, "gtk_main_quit", NULL, NULL);
     g_signal_connect(window, "destroy", (GCallback)onWindowDestroy, NULL);
     gtk_builder_connect_signals(builder, NULL);
 
@@ -64,8 +66,8 @@ void receiveConexions()
 
         int bytes_received = recvfrom(scktRecv, read, 1024,
                                       0, (struct sockaddr *) &client_address, &client_len);
-        printf("Respuesta recibida: %s\n", read);
-        printf("Bytes recibidos: %d\n", bytes_received);
+        g_print("Respuesta recibida: %s\n", read);
+        g_print("Bytes recibidos: %d\n", bytes_received);
         if (!bytes_received) continue;
 
         request = (struct requestStrc *)&read;
@@ -130,13 +132,56 @@ void loginBtnSendClicked(GtkButton *btn)
         return;
     }
 
-    gtkStack = GTK_WIDGET(gtk_builder_get_object(builder, "stack"));
+    refreshUsersList();
+
     gtkFixedSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUserFixed"));
     gtk_stack_set_visible_child((GtkStack*) gtkStack, gtkFixedSelectUser);
 }
 
+void refreshUsersList()
+{
+    struct clientList *list = clients;
+    gtkViewSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUsersView"));
+    gtkGridSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUsersGrid"));
+
+    int row = 0;
+    while (list->id != 0) {
+        gtk_grid_insert_row((GtkGrid *)gtkGridSelectUser, row);
+
+        button[row] = gtk_button_new_with_label(list->name);
+        gtk_grid_attach(GTK_GRID(gtkGridSelectUser), button[row], 1, row, 2, 1);
+        g_signal_connect (button[row], "clicked", G_CALLBACK (selectedUser), list);
+
+        /*gtkCheckBtnSelectUser[row] = gtk_check_button_new_with_label(list->name);
+        gtk_grid_attach(GTK_GRID(gtkGridSelectUser), gtkCheckBtnSelectUser[row], 1, row, 1, 1);*/
+
+        /*label[row] = gtk_label_new(list->name);
+        gtk_label_set_justify(GTK_LABEL(label[row]), GTK_JUSTIFY_LEFT);
+        gtk_label_set_xalign(GTK_LABEL(label[row]), 0);
+        gtk_grid_attach(GTK_GRID(gtkGridSelectUser), label[row], 2, row, 1, 1);*/
+
+        list++;
+        row++;
+    }
+
+    gtk_widget_show_all(gtkGridSelectUser);
+}
+
+// SIGNALS
 void onWindowDestroy()
 {
     CLOSESOCKET(scktRecv);
     gtk_main_quit();
+}
+
+void selectedUser(GtkButton *button, struct clientList *clientInfo)
+{
+    gtkFixedChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatFixed"));
+    gtkGridChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatGrid"));
+    gtkLabelUserNameChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatLabelUserName"));
+    gtkEntryMsgChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatEntryMsg"));
+    gtkBtnSendChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatBtnSend"));
+
+    gtk_label_set_text(GTK_LABEL(gtkLabelUserNameChat), clientInfo->name);
+    gtk_stack_set_visible_child((GtkStack*) gtkStack, gtkFixedChat);
 }

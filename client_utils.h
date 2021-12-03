@@ -48,7 +48,7 @@
 
 struct requestStrc {
     int type;
-    char content[100];
+    char content[512];
 };
 
 struct clientList {
@@ -71,9 +71,18 @@ GtkWidget *gtkFixedLogin;
 
 // Vista "Lista de usuarios disponibles"
 GtkWidget *gtkFixedSelectUser;
+GtkWidget *gtkViewSelectUser;
+GtkWidget *gtkGridSelectUser;
+//GtkWidget *gtkCheckBtnSelectUser[100];
+GtkWidget *button[100];
+//GtkWidget *label[100];
 
 // Vista "Chat"
 GtkWidget *gtkFixedChat;
+GtkWidget *gtkLabelUserNameChat;
+GtkWidget *gtkGridChat;
+GtkWidget *gtkEntryMsgChat;
+GtkWidget *gtkBtnSendChat;
 
 
 void startGUI();
@@ -81,6 +90,10 @@ void receiveConexions();
 void sendConexion();
 void processResponse(struct requestStrc request);
 void connectServer(char content[512]);
+void refreshUsersList();
+
+// SIGNALS
 void onWindowDestroy();
+void selectedUser(GtkButton *button, struct clientList *clientInfo);
 
 #endif //C_GTK_SUBSCRIPTION_CLIENT_UTILS_H
