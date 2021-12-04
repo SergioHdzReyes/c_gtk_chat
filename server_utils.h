@@ -32,35 +32,47 @@
 #define SOCKET int
 #define GETSOCKETERRNO() (errno)
 #endif
+//   -----------------------------------------------------
 
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
 #include <stdlib.h>
-//   -----------------------------------------------------
-
 #include <gtk/gtk.h>
 
-
-// REQUESTS TYPE
-#define ADD     1
-#define MSG     2
-#define REMOVE  3
-#define MAX_CLIENTS 100
+// Tipos de solicitudes
+#define CH_ADD_USER    1
+#define CH_MSG      2
+#define CH_REMOVE   3
+#define CH_CONNECT  4
+#define PORT "19900"
 
 struct requestStrc {
+    int userId;
     int type;
-    char content[100];
+    char content[512];
 };
 
 struct clientInfo {
+    int id;
     char host[20];
     char port[20];
     char name[30];
 };
 
+struct clientsStruct {
+    struct clientInfo clientDt;
+    struct clientsStruct *next;
+} *listClients;
+
+struct clientList {
+    int id;
+    char name[30];
+};
+
+SOCKET socketListen;
+
 pthread_t clientId, serverId;
-struct clientInfo clients[MAX_CLIENTS];
 int clientsCount;
 
 // Variables UI
@@ -68,10 +80,33 @@ GtkWidget *window;
 GtkBuilder *builder;
 GtkWidget *fixed;
 
+// Establece ambiente inicial
+int setConfigs();
+
+// Inicializa interfaz gráfica
 void startGUI();
+
+// Se reciben conexiones entrantes tipo UDP
 void *receiving(void *threadId);
-void *sending(void *threadId);
+
+// Se procesa la información recibida para escoger
+// el tipo de transacción a realizar
 void processRequest(struct clientInfo *, struct requestStrc);
+
+// Se envía respuesta a cliente
+void sending(struct requestStrc *response, char *host, char *port);
+
+// Agrega un cliente a la BD
+void *addClient(void *args);
+
+// Conecta a un cliente
+void *connectClient(void *args);
+
+// Evento para cerrar la ventana
 void onWindowDestroy();
+
+// Funciones para manipular lista enlazada de clientes
+void insertClient(struct clientsStruct **clients, struct clientInfo *clientData);
+void removeClient(struct clientInfo *clientData);
 
 #endif //C_GTK_SUBSCRIPTION_SERVER_UTILS_H

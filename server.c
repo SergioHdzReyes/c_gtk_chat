@@ -6,6 +6,10 @@
 
 int main (int argc, char *argv[])
 {
+    if (!setConfigs()) {
+        printf("Ocurrio un error al establecer configuración inicial.");
+        exit(1);
+    }
     gtk_init(&argc, &argv);
 
     startGUI();
