@@ -7,6 +7,8 @@
 void startGUI()
 {
     serverConnected = 0;
+    userId = 0;
+    userName = "";
     clients = NULL;
 
     builder = gtk_builder_new_from_file("client.glade");
@@ -48,8 +50,9 @@ void receiveConexions()
     }
 
     struct requestStrc *datos = malloc(sizeof(struct requestStrc));
+    *(int *)&datos->userId = 0;
     *(int *)&datos->type = CH_CONNECT;
-    strcpy((char *)&datos->content, "");
+    strcpy((char *)&datos->content, userName);
 
     ssize_t bytes_sent = sendto(scktRecv,
                             datos, sizeof(struct requestStrc),
@@ -71,6 +74,7 @@ void receiveConexions()
         if (!bytes_received) continue;
 
         request = (struct requestStrc *)&read;
+        g_print("ID_ASIGNADO: %d", request->userId);
 
         // Se responde a cliente
         processResponse(*request);
@@ -84,6 +88,7 @@ void sendConexion()
 
 void processResponse(struct requestStrc request)
 {
+    g_print("[processResponse] start\n");
     pthread_t threadId;
 
     switch (request.type) {
@@ -97,6 +102,7 @@ void processResponse(struct requestStrc request)
             printf("REMOVER\n");
             break;
         case CH_CONNECT:
+            userId = request.userId;
             connectServer(request.content);
             break;
         default:
@@ -106,21 +112,21 @@ void processResponse(struct requestStrc request)
 
 void connectServer(char content[512])
 {
+    g_print("[connectServer] start\n");
     clients = (struct clientList *)content;
 
     serverConnected = 1;
-    printf("CONNECTED\n");
 }
 
 void loginBtnSendClicked(GtkButton *btn)
 {
+    g_print("[loginBtnSendClicked] start\n");
     GtkWidget *gtkLabelMsgs = GTK_WIDGET(gtk_builder_get_object(builder, "loginLabelMsgs"));
     GtkWidget *alias = GTK_WIDGET(gtk_builder_get_object(builder, "loginInputName"));
     GtkEntryBuffer *inputName = gtk_entry_get_buffer((GtkEntry*) alias);
-    const char *name = gtk_entry_buffer_get_text(inputName);
-    g_print("Ingresaste %s\n", name);
+    userName = (char *)gtk_entry_buffer_get_text(inputName);
 
-    if (!strcmp(name, "")) {
+    if (!strcmp(userName, "")) {
         gtk_label_set_text(GTK_LABEL(gtkLabelMsgs), (const gchar*)"Ingrese un nombre válido.");
         return;
     }
@@ -133,13 +139,14 @@ void loginBtnSendClicked(GtkButton *btn)
     }
 
     refreshUsersList();
-
     gtkFixedSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUserFixed"));
     gtk_stack_set_visible_child((GtkStack*) gtkStack, gtkFixedSelectUser);
 }
 
 void refreshUsersList()
 {
+    g_print("[refreshUsersList] start\n");
+
     struct clientList *list = clients;
     gtkViewSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUsersView"));
     gtkGridSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUsersGrid"));
@@ -174,8 +181,10 @@ void onWindowDestroy()
     gtk_main_quit();
 }
 
-void selectedUser(GtkButton *button, struct clientList *clientInfo)
+void selectedUser(GtkButton *btn, struct clientList *clientInfo)
 {
+    g_print("[selectedUser] start\n");
+
     gtkFixedChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatFixed"));
     gtkGridChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatGrid"));
     gtkLabelUserNameChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatLabelUserName"));

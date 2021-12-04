@@ -47,6 +47,7 @@
 #define CH_CONNECT   4
 
 struct requestStrc {
+    int userId;
     int type;
     char content[512];
 };
@@ -57,7 +58,8 @@ struct clientList {
 } *clients;
 
 SOCKET scktRecv;
-int serverConnected;
+int serverConnected, userId;
+char *userName;
 
 
 // Variables UI
