@@ -145,7 +145,6 @@ void *addClient(void *args)
 
     struct requestStrc response = {CH_ADD_USER, (char)1};
     sending(&response, clientData->host, clientData->port);
-    printClients(listClients);
 }
 
 void *connectClient(void *args)
@@ -183,6 +182,37 @@ void *connectClient(void *args)
     memcpy(response.content, list, sizeof(list));
 
     sending(&response, clientData->host, clientData->port);
+    refreshUsersList();
+}
+
+void refreshUsersList()
+{
+    struct clientList list[10] = {};
+
+    // Se prepara listado de clientes
+    struct clientsStruct *clients = listClients;
+
+    int count = 0;
+    while (clients != NULL) {
+        list[count].id = clients->clientDt.id;
+        strcpy(list[count].name, clients->clientDt.name);
+        printf("[SHR] %s, %s, %s, %d\n", clients->clientDt.host, clients->clientDt.port, clients->clientDt.name, clients->clientDt.id);
+
+        clients = clients->next;
+        count++;
+    }
+
+    // Se prepara respuesta a cliente
+    struct requestStrc response = {};
+    response.userId = 0;
+    response.type = CH_USERS_REFRESH;
+    memcpy(response.content, list, sizeof(list));
+
+    struct clientsStruct *clients2 = listClients;
+    while (clients2 != NULL) {
+        sending(&response, clients2->clientDt.host, clients2->clientDt.port);
+        clients2 = clients2->next;
+    }
 }
 
 void onWindowDestroy()

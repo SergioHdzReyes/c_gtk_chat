@@ -41,10 +41,11 @@
 #include <gtk/gtk.h>
 
 // Tipos de solicitudes
-#define CH_ADD_USER    1
+#define CH_ADD_USER 1
 #define CH_MSG      2
 #define CH_REMOVE   3
 #define CH_CONNECT  4
+#define CH_USERS_REFRESH 5
 #define PORT "19900"
 
 struct requestStrc {
@@ -101,6 +102,9 @@ void *addClient(void *args);
 
 // Conecta a un cliente
 void *connectClient(void *args);
+
+// Envia listado de usuarios disponibles a todos los clientes
+void refreshUsersList();
 
 // Evento para cerrar la ventana
 void onWindowDestroy();

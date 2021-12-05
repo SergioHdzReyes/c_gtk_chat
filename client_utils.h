@@ -39,12 +39,16 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 
-
 // REQUESTS TYPE
 #define CH_ADD      1
 #define CH_MSG      2
 #define CH_REMOVE   3
-#define CH_CONNECT   4
+#define CH_CONNECT  4
+#define CH_USERS_REFRESH 5
+
+// Información de servidor
+#define SERVER_HOST "127.0.0.1"
+#define SERVER_PORT "19900"
 
 struct requestStrc {
     int userId;
@@ -58,7 +62,7 @@ struct clientList {
 } *clients;
 
 SOCKET scktRecv;
-int serverConnected, userId;
+int serverConnected, userId, curUserChatId, historyMsg;
 char *userName;
 
 
@@ -82,20 +86,24 @@ GtkWidget *button[100];
 // Vista "Chat"
 GtkWidget *gtkFixedChat;
 GtkWidget *gtkLabelUserNameChat;
+GtkWidget *gtkViewChat;
 GtkWidget *gtkGridChat;
 GtkWidget *gtkEntryMsgChat;
 GtkWidget *gtkBtnSendChat;
+GtkWidget *gtkLabelHistoryMsg[100];
 
 
 void startGUI();
 void receiveConexions();
-void sendConexion();
-void processResponse(struct requestStrc request);
+void sendConexion(struct requestStrc *request);
+void processResponse(struct requestStrc response);
 void connectServer(char content[512]);
 void refreshUsersList();
+void *updateUsersList(void *args);
 
 // SIGNALS
 void onWindowDestroy();
 void selectedUser(GtkButton *button, struct clientList *clientInfo);
+void sendMsgClicked(GtkButton *btn);
 
 #endif //C_GTK_SUBSCRIPTION_CLIENT_UTILS_H

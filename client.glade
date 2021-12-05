@@ -98,9 +98,6 @@
                         <child>
                           <placeholder/>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                     </child>
                   </object>
@@ -151,6 +148,10 @@
                       <object class="GtkGrid" id="chatGrid">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="baseline_row">1</property>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
                     </child>
                   </object>
@@ -180,6 +181,7 @@
                 <property name="height_request">50</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="placeholder_text" translatable="yes">Escribir mensaje</property>
               </object>
               <packing>
                 <property name="x">250</property>
