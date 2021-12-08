@@ -56,6 +56,11 @@ struct requestStrc {
     char content[512];
 };
 
+struct msgStrct {
+    int destUser;
+    char msg[400];
+};
+
 struct clientList {
     int id;
     char name[30];
@@ -63,7 +68,7 @@ struct clientList {
 
 SOCKET scktRecv;
 int serverConnected, userId, curUserChatId, historyMsg;
-char *userName;
+char *userName, *curUserChatName;
 
 
 // Variables UI
@@ -100,6 +105,8 @@ void processResponse(struct requestStrc response);
 void connectServer(char content[512]);
 void refreshUsersList();
 void *updateUsersList(void *args);
+void *msgReceived(void *args);
+struct clientList *searchClient();
 
 // SIGNALS
 void onWindowDestroy();

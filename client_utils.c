@@ -16,8 +16,10 @@ void startGUI()
     window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
     gtkStack = GTK_WIDGET(gtk_builder_get_object(builder, "stack"));
 
+    // Vista seleccionar usuario
     gtkViewSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUsersView"));
     gtkGridSelectUser = GTK_WIDGET(gtk_builder_get_object(builder, "selectUsersGrid"));
+    gtk_window_set_title(GTK_WINDOW(window), "Chat UDP");
 
     g_signal_connect(window, "destroy", (GCallback)onWindowDestroy, NULL);
     gtk_builder_connect_signals(builder, NULL);
@@ -73,12 +75,12 @@ void receiveConexions()
 
         int bytes_received = recvfrom(scktRecv, read, 1024,
                                       0, (struct sockaddr *) &client_address, &client_len);
-        g_print("Respuesta recibida: %s\n", read);
+        g_print("\n\nRespuesta recibida: %s\n", read);
         g_print("Bytes recibidos: %d\n", bytes_received);
         if (!bytes_received) continue;
 
         response = (struct requestStrc *)&read;
-        g_print("ID_ASIGNADO: %d", response->userId);
+        g_print("ID_ASIGNADO: %d\n", response->userId);
 
         // Se responde a cliente
         processResponse(*response);
@@ -88,19 +90,46 @@ void receiveConexions()
 // PENDIENTE
 void sendConexion(struct requestStrc *request)
 {
+    g_print("[sendConexion] start\n");
 
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_DGRAM;
+    struct addrinfo *peer_address;
+    if (getaddrinfo(SERVER_HOST, SERVER_PORT, &hints, &peer_address)) {
+        fprintf(stderr, "getaddrinfo() failed. (%d)\n", GETSOCKETERRNO());
+        return;
+    }
+
+    SOCKET serverSocket;
+    serverSocket = socket(peer_address->ai_family,
+                         peer_address->ai_socktype, peer_address->ai_protocol);
+    if (!ISVALIDSOCKET(serverSocket)) {
+        fprintf(stderr, "socket() failed. (%d)\n", GETSOCKETERRNO());
+        return;
+    }
+
+    ssize_t bytes_sent = sendto(serverSocket,
+                                request, sizeof(*request),
+                                0,
+                                peer_address->ai_addr, peer_address->ai_addrlen);
+    printf("Sent %d bytes.\n", (int)bytes_sent);
+
+    freeaddrinfo(peer_address);
+    CLOSESOCKET(serverSocket);
+    printf("Finished.\n");
 }
 
 void processResponse(struct requestStrc response)
 {
     g_print("[processResponse] start\n");
-    pthread_t threadId;
 
     switch (response.type) {
         case CH_ADD:
             printf("AGREGADO\n");
             break;
         case CH_MSG:
+            g_idle_add ((GSourceFunc) msgReceived, &response   );
             printf("MENSAJE\n");
             break;
         case CH_REMOVE:
@@ -113,7 +142,7 @@ void processResponse(struct requestStrc response)
             break;
         case CH_USERS_REFRESH:
             printf("ACTUALIZAR USUARIOS\n");
-            pthread_create(&threadId, NULL, updateUsersList, response.content);
+            g_idle_add ((GSourceFunc) updateUsersList, response.content   );
             break;
         default:
             break;
@@ -140,6 +169,7 @@ void loginBtnSendClicked(GtkButton *btn)
         gtk_label_set_text(GTK_LABEL(gtkLabelMsgs), (const gchar*)"Ingrese un nombre válido.");
         return;
     }
+    gtk_window_set_title(GTK_WINDOW(window), userName);
 
     g_thread_new(NULL, (GThreadFunc)receiveConexions, NULL);
     sleep(1);
@@ -187,6 +217,8 @@ void refreshUsersList()
 
 void *updateUsersList(void *args)
 {
+    g_print("[updateUsersList] start\n");
+
     clients = (struct clientList *)args;
 
     /*int row = 0;
@@ -204,6 +236,50 @@ void *updateUsersList(void *args)
     gtk_widget_show_all(gtkGridSelectUser);*/
 
     refreshUsersList();
+
+    return NULL;
+}
+
+void *msgReceived(void *args)
+{
+    g_print("[msgReceived] start\n");
+    struct requestStrc *response = args;
+
+    char msg[200] = "";
+    strcpy(msg, curUserChatName);
+    strcat(msg, ": ");
+    strcat(msg, response->content);
+
+    gtk_grid_insert_row(GTK_GRID(gtkGridChat), historyMsg);
+    button[historyMsg] = gtk_button_new_with_label(msg);
+    gtk_grid_attach(GTK_GRID(gtkGridChat), button[historyMsg], 1, historyMsg, 1, 1);
+    gtk_widget_show_all(gtkGridChat);
+    historyMsg++;
+
+    return NULL;
+}
+
+struct clientList *searchClient(int usrId)
+{
+    g_print("[searchClient] start\n");
+    g_print("USER_ID: %d\n", usrId);
+
+    struct clientList *list = clients;
+    struct clientList *clnt = NULL;
+
+    while (list->id > 0) {
+        printf("Procesando: %s, %d\n", list->name, list->id);
+        if (list->id == usrId) {
+            clnt = malloc(sizeof(struct clientList));
+            clnt->id = list->id;
+            strcpy(clnt->name, list->name);
+            break;
+        }
+
+        list++;
+    }
+
+    return clnt;
 }
 
 // SIGNALS
@@ -216,6 +292,8 @@ void onWindowDestroy()
 void selectedUser(GtkButton *btn, struct clientList *clientInfo)
 {
     curUserChatId = clientInfo->id;
+    curUserChatName = malloc(sizeof(clientInfo->name));
+    strcpy(curUserChatName, clientInfo->name);
     g_print("[selectedUser] start\n");
 
     gtkFixedChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatFixed"));
@@ -226,6 +304,8 @@ void selectedUser(GtkButton *btn, struct clientList *clientInfo)
     g_signal_connect (gtkBtnSendChat, "clicked", G_CALLBACK (sendMsgClicked), NULL);
 
     gtk_label_set_text(GTK_LABEL(gtkLabelUserNameChat), clientInfo->name);
+    gtkGridChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatGrid"));
+
     gtk_stack_set_visible_child((GtkStack*) gtkStack, gtkFixedChat);
 }
 
@@ -236,13 +316,19 @@ void sendMsgClicked(GtkButton *btn)
     // Se da formato a mensaje para pintarlo en historial
     GtkEntryBuffer *inputMsg = gtk_entry_get_buffer(GTK_ENTRY(gtkEntryMsgChat));
     char *msg = (char *)gtk_entry_buffer_get_text(inputMsg);
+
+    // Se envia mensaje a servidor
+    struct requestStrc request = {userId, CH_MSG, ""};
+    struct msgStrct msgRequest = {curUserChatId, ""};
+    strcpy(msgRequest.msg, msg);
+    memcpy(request.content, &msgRequest, sizeof(msgRequest));
+    sendConexion(&request);
+
     char fullMsg[200] = "";
-    strcpy(fullMsg, userName);
-    strcat(fullMsg, ": ");
+    strcat(fullMsg, "Yo: ");
     strcat(fullMsg, msg);
 
     // Se pinta mensaje en historial
-    gtkGridChat = GTK_WIDGET(gtk_builder_get_object(builder, "chatGrid"));
     gtk_grid_insert_row(GTK_GRID(gtkGridChat), historyMsg);
     button[historyMsg] = gtk_button_new_with_label(fullMsg);
     gtk_grid_attach(GTK_GRID(gtkGridChat), button[historyMsg], 1, historyMsg, 1, 1);
