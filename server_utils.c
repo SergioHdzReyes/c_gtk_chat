@@ -86,10 +86,11 @@ void processRequest(struct clientInfo *clientData, struct requestStrc request)
         case CH_ADD_USER:
             printf("AÑADIR\n");
             strcpy(clientData->name, request.content);
-            pthread_create(&threadId, NULL, addClient, clientData);
+            g_idle_add((GSourceFunc) addClient, clientData);
             clientsCount++;
             break;
         case CH_MSG:
+            g_idle_add((GSourceFunc) sendMsg, &request);
             printf("MENSAJE\n");
             break;
         case CH_REMOVE:
@@ -97,7 +98,7 @@ void processRequest(struct clientInfo *clientData, struct requestStrc request)
             break;
         case CH_CONNECT:
             strcpy(clientData->name, request.content);
-            pthread_create(&threadId, NULL, connectClient, clientData);
+            g_idle_add((GSourceFunc) connectClient, clientData);
             printf("CONNECT\n");
             break;
         default:
@@ -155,7 +156,7 @@ void *connectClient(void *args)
     printf("[connectClient] %s, %s, %s, %d\n", clientData->host, clientData->port, clientData->name, clientData->id);
     insertClient(&listClients, clientData);
 
-    struct clientList list[10];
+    struct clientList list[10] = {};
 
     // Se prepara listado de clientes
     struct clientsStruct *clients = listClients;
@@ -183,6 +184,19 @@ void *connectClient(void *args)
 
     sending(&response, clientData->host, clientData->port);
     refreshUsersList();
+}
+
+void *sendMsg(void *args)
+{
+    printf("[sendMsg] start\n");
+
+    struct requestStrc *request = args;
+    struct msgStrct *msgStrct = (struct msgStrct *)&request->content;
+    struct clientInfo destUser = searchClient(msgStrct->destUser);
+
+    struct requestStrc response = {request->userId, CH_MSG, ""};
+    strcpy(response.content, msgStrct->msg);
+    sending(&response, destUser.host, destUser.port);
 }
 
 void refreshUsersList()
@@ -234,4 +248,25 @@ void insertClient(struct clientsStruct **clients, struct clientInfo *clientData)
     newClient->next = (*clients);
 
     (*clients) = newClient;
+}
+
+struct clientInfo searchClient(int userId)
+{
+    g_print("[searchClient] start\n");
+
+    struct clientsStruct *list = listClients;
+    struct clientInfo userFound = {userId, "", "", ""};
+
+    while (list != NULL) {
+        if (list->clientDt.id == userId) {
+            strcpy(userFound.host, list->clientDt.host);
+            strcpy(userFound.port, list->clientDt.port);
+            strcpy(userFound.name, list->clientDt.name);
+            break;
+        }
+
+        list = list->next;
+    }
+
+    return userFound;
 }

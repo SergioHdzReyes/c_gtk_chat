@@ -54,6 +54,11 @@ struct requestStrc {
     char content[512];
 };
 
+struct msgStrct {
+    int destUser;
+    char msg[400];
+};
+
 struct clientInfo {
     int id;
     char host[20];
@@ -103,6 +108,9 @@ void *addClient(void *args);
 // Conecta a un cliente
 void *connectClient(void *args);
 
+// Envía mensaje a cliente destino
+void *sendMsg(void *args);
+
 // Envia listado de usuarios disponibles a todos los clientes
 void refreshUsersList();
 
@@ -111,6 +119,7 @@ void onWindowDestroy();
 
 // Funciones para manipular lista enlazada de clientes
 void insertClient(struct clientsStruct **clients, struct clientInfo *clientData);
+struct clientInfo searchClient();
 void removeClient(struct clientInfo *clientData);
 
 #endif //C_GTK_SUBSCRIPTION_SERVER_UTILS_H
